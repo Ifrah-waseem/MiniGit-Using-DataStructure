@@ -1,12 +1,3 @@
-// Mini Git - a console version control system in C++
-// Data Structures project. Core logic uses our own structures from ds.h / algo.h.
-//
-// Repository data lives in the hidden folder ".minigit":
-//   HEAD             name of the current branch
-//   branches/<name>  commit id the branch points to
-//   commits/<id>     one file per commit (message, parents, file snapshot)
-//   index            staging area (files added for the next commit)
-//   MERGE_HEAD       only exists while a merge has conflicts
 
 #include <iostream>
 #include <fstream>
@@ -22,12 +13,12 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-typedef DynArray<string> Lines;      // lines of one file (dynamic array)
-typedef AVLTree<Lines> Snapshot;     // file name -> lines   (AVL index)
+typedef DynArray<string> Lines;      
+typedef AVLTree<Lines> Snapshot;     
 
 const string ROOT = ".minigit";
 
-// ================= data types =================
+
 struct Commit {
     string id, message, author, parent1, parent2;   // parent2 only for merge commits
     long long time;
@@ -39,7 +30,7 @@ struct Commit {
 
 struct Branch { string name, id; };
 
-// ================= small helpers =================
+
 static string shortId(const string& id) { return id.substr(0, 7); }
 
 static string timeStr(long long t) {
@@ -49,7 +40,7 @@ static string timeStr(long long t) {
     return buf;
 }
 
-static string hashText(const string& s) {            // FNV-1a 64 bit -> 16 hex chars
+static string hashText(const string& s) {            
     unsigned long long h = 1469598103934665603ULL;
     for (unsigned char c : s) { h ^= c; h *= 1099511628211ULL; }
     char buf[20];
@@ -58,7 +49,7 @@ static string hashText(const string& s) {            // FNV-1a 64 bit -> 16 hex 
 }
 
 static bool readLines(const string& path, Lines& out) {
-    ifstream f(path, ios::binary);                 // binary: no Windows text-mode surprises
+    ifstream f(path, ios::binary);                
     if (!f) return false;
     string data((istreambuf_iterator<char>(f)), istreambuf_iterator<char>());
     if (data.size() >= 2 && (unsigned char)data[0] == 0xFF && (unsigned char)data[1] == 0xFE) {
@@ -76,7 +67,7 @@ static bool readLines(const string& path, Lines& out) {
         data.erase(0, 3);                          // remove UTF-8 BOM
     }
     string line;
-    for (size_t i = 0; i < data.size(); i++) {     // split into lines
+    for (size_t i = 0; i < data.size(); i++) {     
         if (data[i] == '\n') {
             if (!line.empty() && line.back() == '\r') line.pop_back();
             out.push_back(line);
@@ -101,7 +92,7 @@ static string normalizePath(const string& p) {
     return fs::path(p).lexically_normal().generic_string();
 }
 
-static bool sameLines(Lines* a, Lines* b) {           // nullptr = file does not exist
+static bool sameLines(Lines* a, Lines* b) {           
     if (!a && !b) return true;
     if (!a || !b) return false;
     return *a == *b;
@@ -136,7 +127,7 @@ static bool validName(const string& n) {
     return true;
 }
 
-static DynArray<string> tokenize(const string& line) {   // splits words, supports "quotes"
+static DynArray<string> tokenize(const string& line) {   
     DynArray<string> t;
     string cur;
     bool inq = false, has = false;
@@ -161,7 +152,7 @@ static bool byDepthDesc(Commit* const& a, Commit* const& b) {
     return a->time > b->time;
 }
 
-struct SizeItem {                                        // item for the heap (top command)
+struct SizeItem {                                        
     long size; Commit* c;
     bool operator<(const SizeItem& o) const { return size < o.size; }
 };
@@ -247,7 +238,7 @@ public:
         writeLines(ROOT + "/commits/" + c->id, out);
     }
 
-    void saveState() {                    // called after every command
+    void saveState() {                    
         if (!ready) return;
         Lines h; h.push_back(headBranch);
         writeLines(ROOT + "/HEAD", h);
@@ -291,7 +282,7 @@ public:
         Branch* b = findBranch(headBranch);
         return b ? getCommit(b->id) : nullptr;
     }
-    // accepts HEAD, a branch name, a full id, or a unique id prefix (searching)
+    
     Commit* resolve(const string& t) {
         if (t == "HEAD") return headCommit();
         Branch* b = findBranch(t);
@@ -306,7 +297,7 @@ public:
         }
         return nullptr;
     }
-    // recursion: depth = longest path from the first commit
+    
     int depthOf(Commit* c) {
         if (c->depth >= 0) return c->depth;
         int d = 0;
@@ -347,7 +338,7 @@ public:
         return dirty;
     }
 
-    // make the working folder match 'target' (files only in 'from' are removed)
+
     void restoreWorkingDir(Commit* target, Commit* from) {
         if (from)
             from->files.inorder([&](const string& n, Lines&) {
@@ -357,7 +348,7 @@ public:
             target->files.inorder([&](const string& n, Lines& ls) { writeLines(n, ls); });
     }
 
-    // ================= commands =================
+    
     void init() {
         if (ready) { cout << "Repository already initialised.\n"; return; }
         error_code ec;
@@ -368,7 +359,6 @@ public:
         cout << "Initialised empty Mini Git repository in " << ROOT << "/\n";
     }
 
-    // recursion: walk a folder and stage every text file inside it
     void addFolder(const fs::path& dir) {
         for (auto& e : fs::directory_iterator(dir)) {
             if (e.path().filename() == ROOT) continue;
@@ -402,7 +392,7 @@ public:
         c->parent1 = p1;
         c->parent2 = p2;
         c->files = snap;
-        // the id is a hash of the commit content
+       
         string content = msg + "|" + to_string(c->time) + "|" + p1 + "|" + p2 + "|";
         snap.inorder([&](const string& name, Lines& ls) {
             content += name + "\n";
@@ -423,7 +413,7 @@ public:
         bool merging = !mergeHead.empty();
         if (staging.empty() && !merging) { cout << "Nothing to commit (use 'add' first).\n"; return; }
 
-        bool bad = false;                              // refuse unresolved conflicts
+        bool bad = false;                              
         staging.each([&](const string& f) {
             Lines ls;
             if (readLines(f, ls))
@@ -439,11 +429,11 @@ public:
         Commit* parent = headCommit();
         Snapshot snap;
         if (parent) snap = parent->files;
-        while (!staging.empty()) {                     // dequeue every staged file
+        while (!staging.empty()) {                     
             string f = staging.dequeue();
             Lines ls;
             if (readLines(f, ls)) snap.insert(f, ls);
-            else snap = without(snap, f);              // file is gone -> deletion
+            else snap = without(snap, f);              
         }
         if (parent && !merging && sameSnapshot(snap, parent->files)) {
             cout << "No changes since the last commit.\n"; return;
@@ -479,7 +469,7 @@ public:
     void log() {
         Commit* c = headCommit();
         if (!c) { cout << "No commits yet.\n"; return; }
-        LinkedList<Commit*> chain;                     // walk back along first parents
+        LinkedList<Commit*> chain;                    
         while (c) {
             chain.push_back(c);
             c = getCommit(c->parent1);
@@ -537,9 +527,7 @@ public:
         cout << "Switched to branch " << name << "\n";
     }
 
-    // ---------- merge ----------
-    // BFS over parents: mark everything reachable from a, then BFS from b
-    // and return the first commit that was also reachable from a.
+
     Commit* commonAncestor(Commit* a, Commit* b) {
         HashTable<int> seenA, seenB;
         Queue<Commit*> q;
@@ -585,7 +573,7 @@ public:
             cout << "Fast-forward to " << shortId(theirs->id) << "\n";
             return;
         }
-        // three-way comparison: base / ours / theirs, file by file
+     
         Snapshot emptySnap;
         const Snapshot* baseSnap = base ? &base->files : &emptySnap;
         cout << "Merging '" << bname << "' into '" << headBranch << "' (common ancestor "
@@ -643,7 +631,7 @@ public:
 
     void diff(const DynArray<string>& args) {
         Commit* h = headCommit();
-        if (args.size() <= 2) {                        // working folder vs HEAD
+        if (args.size() <= 2) {                       
             if (!h) { cout << "No commits yet.\n"; return; }
             if (args.size() == 2) {
                 string f = normalizePath(args[1]);
@@ -677,7 +665,7 @@ public:
         if (!any) cout << "No differences.\n";
     }
 
-    // ---------- search ----------
+    
     DynArray<Commit*> sortedCommits(bool (*less)(Commit* const&, Commit* const&)) {
         DynArray<Commit*> a = commits;
         quickSort(a, 0, a.size() - 1, less);
@@ -745,7 +733,7 @@ public:
     }
 };
 
-// ================= command line =================
+
 static void help() {
     cout << "Mini Git commands:\n"
             "  init                       create a repository\n"
@@ -802,7 +790,7 @@ int main(int argc, char* argv[]) {
     Repository repo;
     repo.load();
 
-    if (argc > 1) {                                    // one-shot:  minigit commit -m "hi"
+    if (argc > 1) {                                   
         DynArray<string> args;
         for (int i = 1; i < argc; i++) args.push_back(argv[i]);
         runCommand(repo, args);
@@ -811,7 +799,7 @@ int main(int argc, char* argv[]) {
     }
     cout << "Mini Git - type 'help' for commands, 'exit' to quit.\n";
     string line;
-    while (true) {                                     // interactive shell
+    while (true) {                                     
         cout << "minigit> ";
         if (!getline(cin, line)) break;
         if (!runCommand(repo, tokenize(line))) break;

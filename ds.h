@@ -1,14 +1,8 @@
-// ds.h - All data structures used by Mini Git, written from scratch.
-//   DynArray, LinkedList, Queue, HashTable, AVLTree, MaxHeap, quickSort
 #ifndef DS_H
 #define DS_H
 
 #include <string>
 using std::string;
-
-// ---------------------------------------------------------------
-// DynArray : resizable array (stores file lines, commit lists...)
-// ---------------------------------------------------------------
 template <class T>
 class DynArray {
     T* data;
@@ -36,12 +30,12 @@ public:
     ~DynArray() { delete[] data; }
 
     void push_back(const T& v) {
-        T copy = v;                 // copy first: v may live inside data
+        T copy = v;                 
         if (sz == cap) grow();
         data[sz++] = copy;
     }
     void pop_back() { if (sz > 0) sz--; }
-    void assign(int n, const T& v) {            // n copies of v
+    void assign(int n, const T& v) {           
         sz = 0;
         for (int i = 0; i < n; i++) push_back(v);
     }
@@ -56,9 +50,7 @@ public:
     }
 };
 
-// ---------------------------------------------------------------
-// LinkedList : singly linked list (commit history chain)
-// ---------------------------------------------------------------
+
 template <class T>
 class LinkedList {
 public:
@@ -82,9 +74,6 @@ public:
     int size() const { return n; }
 };
 
-// ---------------------------------------------------------------
-// Queue : linked list based (staging area, BFS)
-// ---------------------------------------------------------------
 template <class T>
 class Queue {
     struct Node { T val; Node* next; Node(const T& v) : val(v), next(nullptr) {} };
@@ -123,9 +112,6 @@ public:
     void each(F f) const { for (Node* p = head; p; p = p->next) f(p->val); }
 };
 
-// ---------------------------------------------------------------
-// HashTable : string key -> V, separate chaining, auto resize
-// ---------------------------------------------------------------
 template <class V>
 class HashTable {
     struct Node {
@@ -188,10 +174,6 @@ public:
     int size() const { return n; }
 };
 
-// ---------------------------------------------------------------
-// AVLTree : self-balancing BST, string key -> V
-// (index of files inside each commit snapshot)
-// ---------------------------------------------------------------
 template <class V>
 class AVLTree {
     struct Node {
@@ -278,9 +260,7 @@ public:
     void inorder(F f) const { walk(root, f); }          // f(const string&, V&)
 };
 
-// ---------------------------------------------------------------
-// MaxHeap : binary heap in an array (needs operator< on T)
-// ---------------------------------------------------------------
+
 template <class T>
 class MaxHeap {
     DynArray<T> a;
@@ -288,7 +268,7 @@ public:
     void push(const T& v) {
         a.push_back(v);
         int i = a.size() - 1;
-        while (i > 0) {                                   // sift up
+        while (i > 0) {                                   
             int p = (i - 1) / 2;
             if (!(a[p] < a[i])) break;
             T t = a[p]; a[p] = a[i]; a[i] = t;
@@ -313,9 +293,7 @@ public:
     bool empty() const { return a.size() == 0; }
 };
 
-// ---------------------------------------------------------------
-// quickSort : sorts a[lo..hi] using a "less than" function
-// ---------------------------------------------------------------
+
 template <class T>
 void quickSort(DynArray<T>& a, int lo, int hi, bool (*less)(const T&, const T&)) {
     if (lo >= hi) return;

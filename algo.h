@@ -1,4 +1,4 @@
-// algo.h - String algorithms (naive, KMP, Rabin-Karp) and LCS based diff.
+
 #ifndef ALGO_H
 #define ALGO_H
 
@@ -7,10 +7,7 @@
 #include "ds.h"
 using std::string;
 
-// Each function returns the index of the first match at or after 'start',
-// or -1 if there is no match.
 
-// 1) Naive search: O(n*m) in the worst case
 inline int naiveFind(const string& t, const string& p, int start = 0) {
     int n = t.size(), m = p.size();
     if (m == 0) return -1;
@@ -22,7 +19,6 @@ inline int naiveFind(const string& t, const string& p, int start = 0) {
     return -1;
 }
 
-// 2) KMP: builds a failure table so the text is never re-scanned, O(n+m)
 inline int kmpFind(const string& t, const string& p, int start = 0) {
     int n = t.size(), m = p.size();
     if (m == 0) return -1;
@@ -41,7 +37,6 @@ inline int kmpFind(const string& t, const string& p, int start = 0) {
     return -1;
 }
 
-// 3) Rabin-Karp: rolling hash of the window, compare characters only if hashes match
 inline int rabinKarpFind(const string& t, const string& p, int start = 0) {
     const long long B = 256, M = 1000000007LL;
     int n = t.size(), m = p.size();
@@ -60,8 +55,7 @@ inline int rabinKarpFind(const string& t, const string& p, int start = 0) {
     return -1;
 }
 
-// LCS based line diff. Prints "- old line" / "+ new line" with line numbers.
-// Returns the number of changed lines.
+
 inline int lcsDiff(const DynArray<string>& a, const DynArray<string>& b) {
     int n = a.size(), m = b.size();
     // L[i][j] = length of LCS of a[i..] and b[j..]   (stored in a flat array)
